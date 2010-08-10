@@ -1,0 +1,83 @@
+/**
+  * @author vectoroc
+  *
+  * Vkontatke friends watcher
+  * screenshot http://skitch.com/vectoroc/dtrr4/
+  *
+  **/
+if (!window.localStorage || !window.JSON) {
+  var error = 'You use unsupported browser';
+  alert('You use unsupported browser');
+  throw error; 
+}
+  
+  
+(function() {
+  var NS = 'vk_friends_watcher_'; 
+  var storage = {
+    history : JSON.parse(localStorage.getItem(NS + 'history')) || [],
+    friends  : JSON.parse(localStorage.getItem(NS + 'friends')) || {},
+	
+	flush : function() {
+      localStorage.setItem(NS + 'history', JSON.stringify(this.history));
+      localStorage.setItem(NS + 'friends', JSON.stringify(this.friends));	
+	}
+  }
+  
+  function logDeleted(friend) {
+//    console.info('deleted friend', friend);
+    storage.history.push({event : 'deleted', data: friend.id, time: Date.now()});
+  }
+
+  function logAdded(friend) {
+//    console.info('added friend', friend);
+    storage.history.push({type : 'added', data: friend.id, time: Date.now()});
+    storage.friends[friend.id] = friend;
+  }
+  
+  function parseVkJsonFriends(responseText) {
+    var result = {};
+    var data = eval('('+ responseText +')');
+    for (var i = 0; i < data.friends.length; i++) {
+      result[data.friends[i][0]] = {
+        id: data.friends[i][0], 
+        name: data.friends[i][1], 
+        ava: data.friends[i][2]
+      };
+    } 
+	
+    return result; 
+  }
+  
+  function showHistory() {
+    var result = [];
+      for (var i = 0; i < storage.history.length; i++) {
+	    var event = storage.history[i];
+        var friend = storage.friends[event.data];
+
+        result.push('<div><img width=40 height=40 src="' + friend.ava + '"/><span style="padding: 2em 1em">' + friend.name + '-' + (new Date(event.time).toLocaleString()) + ' ' + event.type + '</span></div>');
+	  }
+      var mb = new MessageBox({title: 'History'});
+      mb.addButton({label: 'Ok', onClick: function(){mb.hide();} });
+	  mb.content('<div style="overflow-y: scroll; height: 400px">' + result.join('') + '</div>').show();
+  }  
+
+  Ajax.Get({url:'friends.php',onDone: function(ajaxObj,responseText){ 
+    var friends_remote = parseVkJsonFriends(responseText);
+	
+//  console.info('loaded friends', friends_remote);
+//  console.info('friends', storage);
+
+    for (var id in storage.friends) {
+      if (!friends_remote[id]) logDeleted(storage.friends[id]);
+    }
+
+    for (var id in friends_remote) {
+      if (!storage.friends[id]) logAdded(friends_remote[id]);
+    }
+//  console.dir(storage);
+    showHistory();
+    storage.flush();
+  }});
+
+})();
