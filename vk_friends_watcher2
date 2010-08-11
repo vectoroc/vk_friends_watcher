@@ -49,22 +49,51 @@ if (!window.localStorage || !window.JSON) {
     return result; 
   }
   
+  function getMessageBox() {
+    if (!getMessageBox._mb) {
+      getMessageBox._mb = new MessageBox({title: 'History'});
+	}
+	return getMessageBox._mb;
+  }
+  
+  
+  
   function showHistory() {
-    var result = [];
-      for (var i = 0; i < storage.history.length; i++) {
-	    var event = storage.history[i];
-        var friend = storage.friends[event.data];
-
-        result.push('<div><img width=40 height=40 src="' + friend.ava + '"/><span style="padding: 2em 1em">' + friend.name + '-' + (new Date(event.time).toLocaleString()) + ' ' + event.type + '</span></div>');
-	  }
-      var mb = new MessageBox({title: 'History'});
-      mb.addButton({label: 'Ok', onClick: function(){mb.hide();} });
-	  mb.content('<div style="overflow-y: scroll; height: 400px">' + result.join('') + '</div>').show();
+    var result = [], mb = getMessageBox();
+	
+	result.push('<div style="overflow-y: scroll; height: 400px">');	
+		
+    for (var i = storage.history.length - 1; i >= 0; i--) {
+	  var event  = storage.history[i];
+	  var date   = new Date(event.time).toLocaleDateString();
+      var friend = storage.friends[event.data];
+       
+	  result.push('<table><tr><td rowspan="3">');
+	  result.push('<img height=40 width=40 src="' + friend.ava + '"/>');
+	  result.push('</td><td>');	  
+	  result.push('<a href="http://vk.com/id' + friend.id + '">' + friend.name + '</a>');
+	  result.push('</td></tr><tr><td style="color: gray">');
+	  if (event.type == 'added') result.push('Добавлен ' + date);
+	  else retuls.push('Удален ' + date);
+	  result.push('</td></tr><tr><td>&nbsp;</td></tr></table>');
+    }
+	result.push('</div>');
+    
+	mb.addButton({label: 'Ok', onClick: function(){mb.hide();}});
+	mb.content(result.join(''));
+	mb.show();
+  } 
+  
+  function showLoader() {
+    getMessageBox()
+	  .content('<div class="box_loader"></div>')
+	  .show();
   }  
 
+  showLoader();
   Ajax.Get({url:'friends.php',onDone: function(ajaxObj,responseText){ 
     var friends_remote = parseVkJsonFriends(responseText);
-	
+
 //  console.info('loaded friends', friends_remote);
 //  console.info('friends', storage);
 
