@@ -2,7 +2,7 @@
   * @author vectoroc
   *
   * Vkontatke friends watcher
-  * screenshot http://skitch.com/vectoroc/dtqrt/
+  * screenshot http://skitch.com/vectoroc/dtrr4/
   *
   **/
 if (!window.localStorage || !window.JSON) {
@@ -24,12 +24,13 @@ if (!window.localStorage || !window.JSON) {
 	}
   }
   
-  function logDeleted(friend) {
+  function markDeleted(friend) {
 //    console.info('deleted friend', friend);
+	storage.friends[friend.id].deleted = true;
     storage.history.push({event : 'deleted', data: friend.id, time: Date.now()});
   }
 
-  function logAdded(friend) {
+  function markAdded(friend) {
 //    console.info('added friend', friend);
     storage.history.push({type : 'added', data: friend.id, time: Date.now()});
     storage.friends[friend.id] = friend;
@@ -49,43 +50,75 @@ if (!window.localStorage || !window.JSON) {
     return result; 
   }
   
-  function getMessageBox() {
-    if (!getMessageBox._mb) {
-      getMessageBox._mb = new MessageBox({title: 'History'});
+  function _getMessageBox() {
+    if (!_getMessageBox._mb) {
+      _getMessageBox._mb = new MessageBox({title: 'History'});
 	}
-	return getMessageBox._mb;
+	return _getMessageBox._mb;
   }
   
-  
+  function _substitute(tpl, params) {
+	for (var key in params) {
+	  tpl = tpl.replace('#{' + key + '}', params[key]);
+	}
+	return tpl;
+  }  
   
   function showHistory() {
-    var result = [], mb = getMessageBox();
-	
-	result.push('<div style="overflow-y: scroll; height: 400px">');	
+    var result = [], mb = _getMessageBox();
+	var rowTpl = [
+	  '<table>',
+	    '<tr>',
+		  '<td rowspan="3">',
+		    '<img height=40 width=40 src="#{ava}"/>',
+		  '</td>',
+		  '<td>',
+		    '<a href="http://vk.com/id#{id}">#{name}</a>',
+		  '</td>',
+		'</tr>',
+		'<tr>',
+		  '<td style="color: gray">',
+			'#{action} #{date}',
+		  '</td>',
+		'</tr>',
+		'<tr><td>&nbsp;</td></tr>',
+	  '</table>'
+	].join('');
+
+	result.push('<div style="overflow-y: scroll; height: 300px">');	
 		
     for (var i = storage.history.length - 1; i >= 0; i--) {
 	  var event  = storage.history[i];
-	  var date   = new Date(event.time).toLocaleDateString();
       var friend = storage.friends[event.data];
+	  var params = clone(friend);
+	  
+	  params.date = new Date(event.time).toLocaleDateString();
+	  if (event.type == 'added') 
+	    params.action = 'Добавлен';
+	  else 
+	    params.action = 'Удален';
        
-	  result.push('<table><tr><td rowspan="3">');
-	  result.push('<img height=40 width=40 src="' + friend.ava + '"/>');
-	  result.push('</td><td>');	  
-	  result.push('<a href="http://vk.com/id' + friend.id + '">' + friend.name + '</a>');
-	  result.push('</td></tr><tr><td style="color: gray">');
-	  if (event.type == 'added') result.push('Добавлен ' + date);
-	  else retuls.push('Удален ' + date);
-	  result.push('</td></tr><tr><td>&nbsp;</td></tr></table>');
+	  result.push(_substitute(rowTpl, params));
     }
+	
+	if (storage.history.length == 0) {
+	  result.push('<span style="color: gray">Нет никаких записей</span>');
+	}
+	
 	result.push('</div>');
     
 	mb.addButton({label: 'Ok', onClick: function(){mb.hide();}});
+	mb.addButton({label: 'Сlear', onClick: function(){
+	  storage.history = [];
+	  storage.flush();
+	  mb.hide();
+	}});
 	mb.content(result.join(''));
 	mb.show();
   } 
   
   function showLoader() {
-    getMessageBox()
+    _getMessageBox()
 	  .content('<div class="box_loader"></div>')
 	  .show();
   }  
@@ -98,11 +131,13 @@ if (!window.localStorage || !window.JSON) {
 //  console.info('friends', storage);
 
     for (var id in storage.friends) {
-      if (!friends_remote[id]) logDeleted(storage.friends[id]);
+      if (!friends_remote[id] && !storage.friends[id].deleted) 
+	    markDeleted(storage.friends[id]);
     }
 
     for (var id in friends_remote) {
-      if (!storage.friends[id]) logAdded(friends_remote[id]);
+      if (!storage.friends[id] || storage.friends[id].deleted)
+	    markAdded(friends_remote[id]);
     }
 //  console.dir(storage);
     showHistory();
