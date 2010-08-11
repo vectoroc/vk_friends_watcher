@@ -2,7 +2,7 @@
   * @author vectoroc
   *
   * Vkontatke friends watcher
-  * screenshot http://skitch.com/vectoroc/dtrr4/
+  * screenshot http://skitch.com/vectoroc/dtqrt/
   *
   **/
 if (!window.localStorage || !window.JSON) {
