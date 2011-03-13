@@ -12,8 +12,11 @@ if (!window.localStorage || !window.JSON) {
 }
 
 if (!window.cur || !cur.friendsList) {
+  var url = location.protocol + '//';
+  url += /^vk.com|vkontakte.ru$/.test(location.hostname) ? location.hostname : 'vk.com';
+  url += '/friends'
   // works only on friends list page
-  location = '/friends';
+  location = url;
 }
   
 (function() {
