@@ -10,6 +10,11 @@ if (!window.localStorage || !window.JSON) {
   alert(error);
   throw error; 
 }
+
+if (!window.cur || !cur.friendsList) {
+  // works only on friends list page
+  location = '/friends';
+}
   
 (function() {
   var NS = 'vk_friends_watcher_'; 
