@@ -1,0 +1,1 @@
+(function(){var a=document.createElement("script");a.src="https://github.com/vectoroc/vk_friends_watcher/raw/master/vk_friends_watcher.js";document.body.appendChild(a)})();
