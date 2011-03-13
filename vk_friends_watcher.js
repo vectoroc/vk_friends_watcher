@@ -7,10 +7,9 @@
   **/
 if (!window.localStorage || !window.JSON) {
   var error = 'You use unsupported browser';
-  alert('You use unsupported browser');
+  alert(error);
   throw error; 
 }
-  
   
 (function() {
   var NS = 'vk_friends_watcher_'; 
@@ -25,27 +24,26 @@ if (!window.localStorage || !window.JSON) {
   }
   
   function markDeleted(friend) {
-//    console.info('deleted friend', friend);
+   // console.info('deleted friend', friend);
     storage.friends[friend.id].deleted = true;
     storage.history.push({event : 'deleted', data: friend.id, time: Date.now()});
   }
 
   function markAdded(friend) {
-//    console.info('added friend', friend);
+   // console.info('added friend', friend);
     storage.history.push({type : 'added', data: friend.id, time: Date.now()});
     storage.friends[friend.id] = friend;
   }
   
-  function parseVkJsonFriends(responseText) {
+  function parseVkJsonFriends(friends) {
     var result = {};
-    var data = eval('('+ responseText +')');
-    for (var i = 0; i < data.friends.length; i++) {
-      result[data.friends[i][0]] = {
-        id: data.friends[i][0], 
-        name: data.friends[i][1], 
-        ava: data.friends[i][2]
+    for (var i = 0; i < friends.length; i++) {
+      result[friends[i][0]] = {
+        id: friends[i][0], 
+        name: friends[i][4], 
+        ava: friends[i][1]
       };
-    } 
+    }
     
     return result; 
   }
@@ -107,12 +105,12 @@ if (!window.localStorage || !window.JSON) {
     
     result.push('</div>');
     
-    mb.addButton({label: 'Ok', onClick: function(){mb.hide();}});
-    mb.addButton({label: 'Сlear', onClick: function(){
+    mb.addButton('Ok', function(){mb.hide();});
+    mb.addButton('Сlear', function(){
       storage.history = [];
       storage.flush();
       mb.hide();
-    }});
+    });
     mb.content(result.join(''));
     mb.show();
   } 
@@ -123,25 +121,27 @@ if (!window.localStorage || !window.JSON) {
       .show();
   }  
 
-  showLoader();
-  Ajax.Get({url:'friends.php',onDone: function(ajaxObj,responseText){ 
-    var friends_remote = parseVkJsonFriends(responseText);
+  if (cur && cur.friendsList) {
+	  showLoader();
+	  var friends_remote = parseVkJsonFriends(cur.friendsList.all);
 
-//  console.info('loaded friends', friends_remote);
-//  console.info('friends', storage);
+	 // console.info('loaded friends', friends_remote);
+	 // console.info('friends', storage);
 
-    for (var id in storage.friends) {
-      if (!friends_remote[id] && !storage.friends[id].deleted) 
-        markDeleted(storage.friends[id]);
-    }
+	    for (var id in storage.friends) {
+	      if (!friends_remote[id] && !storage.friends[id].deleted) 
+	        markDeleted(storage.friends[id]);
+	    }
 
-    for (var id in friends_remote) {
-      if (!storage.friends[id] || storage.friends[id].deleted)
-        markAdded(friends_remote[id]);
-    }
-//  console.dir(storage);
-    showHistory();
-    storage.flush();
-  }});
-
+	    for (var id in friends_remote) {
+	      if (!storage.friends[id] || storage.friends[id].deleted)
+	        markAdded(friends_remote[id]);
+	    }
+	 // console.dir(storage);
+	    showHistory();
+	    storage.flush();
+  }
+  else {
+    alert('Run script on friends list page');
+  }
 })();
